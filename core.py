@@ -651,7 +651,12 @@ class Node(object):
         Example:
             >>> Node("pCube1.ty") + 4
         """
-        return _create_and_connect_node("add", self, other)
+        op = "add_single"
+        if self.node and cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3'):
+            op = "add"
+        elif not self.node and isinstance(self.attrs, (list, tuple)):
+            op = "add"
+        return _create_and_connect_node(op, self, other)
 
     def __radd__(self, other):
         """
@@ -661,7 +666,12 @@ class Node(object):
         Example:
             >>> 4 + Node("pCube1.ty")
         """
-        return _create_and_connect_node("add", other, self)
+        op = "add_single"
+        if self.node and cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3'):
+            op = "add"
+        elif not self.node and isinstance(self.attrs, (list, tuple)):
+            op = "add"
+        return _create_and_connect_node(op, other, self)
 
     def __sub__(self, other):
         """
@@ -689,7 +699,12 @@ class Node(object):
         Example:
             >>> Node("pCube1.ty") * 4
         """
-        return _create_and_connect_node("mul", self, other)
+        op = "mul_single"
+        if self.node and cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3'):
+            op = "mul"
+        elif not self.node and isinstance(self.attrs, (list, tuple)):
+            op = "mul"
+        return _create_and_connect_node(op, self, other)        
 
     def __rmul__(self, other):
         """
@@ -699,7 +714,12 @@ class Node(object):
         Example:
             >>> 4 * Node("pCube1.ty")
         """
-        return _create_and_connect_node("mul", other, self)
+        op = "mul_single"
+        if self.node and cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3'):
+            op = "mul"
+        elif not self.node and isinstance(self.attrs, (list, tuple)):
+            op = "mul"
+        return _create_and_connect_node(op, other, self)
 
     def __div__(self, other):
         """
@@ -1434,12 +1454,24 @@ def _create_node_name(operation, *args):
             # Unknown arg-type
             node_name.append("UNK" + str(arg))
 
+    node_type_name = lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]
+    node_type_upper_letters = [l.lower() for l in node_type_name if l.isupper()]
+    if node_type_upper_letters > 0:
+        node_type_upper_abbr = node_type_name[0] + ''.join(node_type_upper_letters)
+    elif len(node_type_name) < 5:
+        node_type_upper_abbr = node_type_name
+    else:
+        node_type_upper_abbr = ''.join([l for l in node_type_name if l not in 'aeiou'])
+    print '# node_type_upper_abbr - {0}'.format(node_type_upper_abbr)
+
     # Combine all name-elements
     name = "_".join([
-        "nc",  # Common node_calculator-prefix
-        operation.upper(),  # Operation type
+        # "nc",  # Common node_calculator-prefix
+        # operation.upper(),  # Operation type
+        operation,  # Operation type
         "_".join(node_name),  # Involved args
-        lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
+        # lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
+        node_type_upper_abbr  # Node type as suffix
     ])
 
     return name

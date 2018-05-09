@@ -198,6 +198,26 @@ class LookupTableMetaClass(object):
                 ],
                 "output": ["outputX", "outputY", "outputZ"],
                 "operation": 0,
+            },
+            "add_single": {
+                "node": "addDoubleLinear",
+                "inputs": [
+                    ["input1"],
+                    ["input2"],
+                ],
+                "output": [
+                    "output"
+                ],
+            },
+            "mul_single": {
+                "node": "multDoubleLinear",
+                "inputs": [
+                    ["input1"],
+                    ["input2"],
+                ],
+                "output": [
+                    "output"
+                ],
             }
         }
 
