@@ -1468,7 +1468,7 @@ def _create_node_name(operation, *args):
     name = "_".join([
         # "nc",  # Common node_calculator-prefix
         # operation.upper(),  # Operation type
-        operation,  # Operation type
+        operation.replace('_single', ''),  # Operation type
         "_".join(node_name),  # Involved args
         # lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
         node_type_upper_abbr  # Node type as suffix
