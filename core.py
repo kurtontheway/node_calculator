@@ -652,7 +652,8 @@ class Node(object):
             >>> Node("pCube1.ty") + 4
         """
         op = "add_single"
-        if self.node and cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3'):
+        if self.node and (len(self.attrs) > 1 or 
+                          cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3')):
             op = "add"
         elif not self.node and isinstance(self.attrs, (list, tuple)):
             op = "add"
@@ -667,7 +668,8 @@ class Node(object):
             >>> 4 + Node("pCube1.ty")
         """
         op = "add_single"
-        if self.node and cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3'):
+        if self.node and (len(self.attrs) > 1 or 
+                          cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3')):
             op = "add"
         elif not self.node and isinstance(self.attrs, (list, tuple)):
             op = "add"
@@ -700,7 +702,8 @@ class Node(object):
             >>> Node("pCube1.ty") * 4
         """
         op = "mul_single"
-        if self.node and cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3'):
+        if self.node and (len(self.attrs) > 1 or 
+                          cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3')):
             op = "mul"
         elif not self.node and isinstance(self.attrs, (list, tuple)):
             op = "mul"
@@ -715,7 +718,8 @@ class Node(object):
             >>> 4 * Node("pCube1.ty")
         """
         op = "mul_single"
-        if self.node and cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3'):
+        if self.node and (len(self.attrs) > 1 or 
+                          cmds.attributeQuery(self.attrs[0], node=self.node, at=True).endswith('3')):
             op = "mul"
         elif not self.node and isinstance(self.attrs, (list, tuple)):
             op = "mul"
@@ -1462,7 +1466,6 @@ def _create_node_name(operation, *args):
         node_type_upper_abbr = node_type_name
     else:
         node_type_upper_abbr = ''.join([l for l in node_type_name if l not in 'aeiou'])
-    print '# node_type_upper_abbr - {0}'.format(node_type_upper_abbr)
 
     # Combine all name-elements
     name = "_".join([
