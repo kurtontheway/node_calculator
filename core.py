@@ -1413,6 +1413,10 @@ def _create_and_connect_node(operation, *args):
         return Node(new_node, outputs[:max_dim])
 
 
+def _reuse_and_connect_node(*args):
+    pass
+
+
 def _create_node_name(operation, *args):
     """
     Create a procedural node-name that is as descriptive as possible
@@ -1767,8 +1771,11 @@ def _check_for_parent_attribute(attribute_list):
         # Any numeric value instantly breaks any chance for a parent_attr
         if isinstance(attr, numbers.Real):
             return None
-        node = attr.split(".")[0]
-        attr = ".".join(attr.split(".")[1:])
+        # node = attr.split(".")[0]
+        # attr = ".".join(attr.split(".")[1:])
+        buffers = attr.split(".")
+        node = ".".join(buffers[0:-1])
+        attr = buffers[-1]
         parent_attr = cmds.attributeQuery(
             attr,
             node=node,
@@ -1777,9 +1784,12 @@ def _check_for_parent_attribute(attribute_list):
         )
 
         # Any non-existent or faulty parent_attr (namely multi-attrs) breaks chance for parent_attr
-        if parent_attr is False or parent_attr is None:
+        # if parent_attr is False or parent_attr is None:
+        if not parent_attr:
             return None
-
+        elif len(buffers) > 2:
+            node = buffers[0]
+            parent_attr = ['.'.join(buffers[1:-1])]
         # The first parent_attr becomes the potential_parent_attr...
         if potential_parent_attr is None:
             potential_parent_attr = parent_attr
@@ -1805,8 +1815,11 @@ def _check_for_parent_attribute(attribute_list):
         cmds.attributeQuery(x, node=potential_node, longName=True)
         for x in checked_attributes
     ]
+    attributeQueryCompatibleName = potential_parent_attr[0]
+    if '[' in potential_parent_attr[0]:
+        attributeQueryCompatibleName = '['.join(potential_parent_attr[0].split('[')[:-1])
     all_child_attributes = cmds.attributeQuery(
-        potential_parent_attr,
+        attributeQueryCompatibleName,
         node=potential_node,
         listChildren=True,
         longName=True
