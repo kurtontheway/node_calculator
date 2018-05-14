@@ -156,6 +156,44 @@ class LookupTableMetaClass(object):
                 "multi_index": True,
                 "output": ["matrixSum"],
             },
+            "add_matrix": {
+                "node": "addMatrix",
+                "inputs": [
+                    [
+                        "matrixIn[{multi_index}]"
+                    ],
+                ],
+                "multi_index": True,
+                "output": ["matrixSum"],
+            },
+            "add_matrix_weighted": {
+                "node": "wtAddMatrix",
+                "inputs": [
+                    [
+                        "wtMatrix[{multi_index}].matrixIn"
+                    ],
+                ],
+                "multi_index": True,
+                "output": ["matrixSum"],
+            },
+            "inverse_matrix": {
+                "node": "inverseMatrix",
+                "inputs": [
+                    [
+                        "inputMatrix"
+                    ],
+                ],
+                "output": ["outputMatrix"],
+            },
+            "transpose_matrix": {
+                "node": "transposeMatrix",
+                "inputs": [
+                    [
+                        "inputMatrix"
+                    ],
+                ],
+                "output": ["outputMatrix"],
+            },
             "decompose_matrix": {
                 "node": "decomposeMatrix",
                 "inputs": [
@@ -277,6 +315,17 @@ class LookupTableMetaClass(object):
                 ],
                 "output": ["outputX", "outputY", "outputZ"],
                 "operation": i + 1,
+            }
+        for i, vector_product_operator in enumerate(["vector_matrix_product", "point_matrix_product"]):
+            NODE_LOOKUP_TABLE[vector_product_operator] = {
+                "node": "vectorProduct",
+                "inputs": [
+                    ["input1X", "input1Y", "input1Z"],
+                    ["matrix"],
+                    ["normalizeOutput"],
+                ],
+                "output": ["outputX", "outputY", "outputZ"],
+                "operation": i + 3,
             }
 
         # Fill NODE_LOOKUP_TABLE with dnMinMax operations

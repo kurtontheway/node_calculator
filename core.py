@@ -382,6 +382,42 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('cross', attr_a, attr_b, normalize)
 
     @staticmethod
+    def vector_matrix_product(attr_a, attr_b, normalize=False):
+        """
+        Create vectorProduct-node for vector Matrix Production
+
+        Args:
+            attr_a (Node, str, int, float, list): Plug or value for vector A
+            attr_b (Node, str, int, float, list): Plug or value for vector B
+            normalize (Node, boolean): Whether resulting vector should be normalized
+
+        Returns:
+            Node: Instance with vectorProduct-node and output-attribute(s)
+
+        Example:
+            >>> Op.vector_matrix_product(Node("pCubeA.t"), Node("pCubeB.m"), True)
+        """
+        return _create_and_connect_node('vector_matrix_product', attr_a, attr_b, normalize)
+
+    @staticmethod
+    def point_matrix_product(attr_a, attr_b, normalize=False):
+        """
+        Create vectorProduct-node for Point Matrix Production
+
+        Args:
+            attr_a (Node, str, int, float, list): Plug or value for vector A
+            attr_b (Node, str, int, float, list): Plug or value for vector B
+            normalize (Node, boolean): Whether resulting vector should be normalized
+
+        Returns:
+            Node: Instance with vectorProduct-node and output-attribute(s)
+
+        Example:
+            >>> Op.point_matrix_product(Node("pCubeA.t"), Node("pCubeB.m"), True)
+        """
+        return _create_and_connect_node('point_matrix_product', attr_a, attr_b, normalize)
+
+    @staticmethod
     def normalize_vector(in_vector, normalize=True):
         """
         Create vectorProduct-node to normalize the given vector
@@ -437,6 +473,101 @@ class OperatorMetaClass(object):
             out.s = decomp.outputScale
         """
         return _create_and_connect_node('mult_matrix', *attrs)
+
+    @staticmethod
+    def add_matrix(*attrs):
+        """
+        Create addMatrix-node for adding matrices
+
+        Args:
+            attrs (Node, string, list): Any number of matrix inputs to be added
+
+        Returns:
+            Node: Instance with addMatrix-node and output-attribute(s)
+
+        Example:
+            out = Node('pSphere')
+            matrix_add = Op.add_matrix(
+                Node('pCube1.worldMatrix'), Node('pCube2').worldMatrix
+            )
+            decomp = Op.decompose_matrix(matrix_add)
+            out.t = decomp.outputTranslate
+            out.r = decomp.outputRotate
+            out.s = decomp.outputScale
+        """
+        return _create_and_connect_node('add_matrix', *attrs)
+
+    @staticmethod
+    def add_matrix_weighted(*attrs, **kwargs):
+        """
+        Create wtAddMatrix-node for adding matrices
+
+        Args:
+            attrs (Node, string, list): Any number of matrix inputs to be added
+            weightList [(Node, str, int, float)]: [w] weightList for input matrices
+        Returns:
+            Node: Instance with wtAddMatrix-node and output-attribute(s)
+
+        Example:
+            out = Node('pSphere')
+            matrix_add = Op.add_matrix_weighted(
+                Node('pCube1.worldMatrix'), Node('pCube2').worldMatrix
+                w=(1, 0.5)
+            )
+            decomp = Op.decompose_matrix(matrix_add)
+            out.t = decomp.outputTranslate
+            out.r = decomp.outputRotate
+            out.s = decomp.outputScale
+        """
+        wtAddMatrix_node_obj = _create_and_connect_node('add_matrix_weighted', *attrs)
+        num_inputMatrix = len(attrs)
+        weightList = kwargs.get("weightList", kwargs.get("w", [1]*num_inputMatrix))
+        for i, weight in enumerate(weightList):
+            _set_or_connect_a_to_b('{}.wtMatrix[{}].weightIn'.format(wtAddMatrix_node_obj.node, i), weight)
+
+        return wtAddMatrix_node_obj
+
+    @staticmethod
+    def inverse_matrix(*attrs):
+        """
+        Create addMatrix-node for adding matrices
+
+        Args:
+            attrs (Node, string, list): Plug or value for input matrix
+
+        Returns:
+            Node: Instance with inverseMatrix-node and output-attribute(s)
+
+        Example:
+            out = Node('pSphere')
+            matrix_add = Op.inverse_matrix(Node('pCube2').worldMatrix)
+            decomp = Op.decompose_matrix(matrix_add)
+            out.t = decomp.outputTranslate
+            out.r = decomp.outputRotate
+            out.s = decomp.outputScale
+        """
+        return _create_and_connect_node('inverse_matrix', *attrs)
+
+    @staticmethod
+    def transpose_matrix(*attrs):
+        """
+        Create addMatrix-node for adding matrices
+
+        Args:
+            attrs (Node, string, list): Plug or value for input matrix
+
+        Returns:
+            Node: Instance with transposeMatrix-node and output-attribute(s)
+
+        Example:
+            out = Node('pSphere')
+            matrix_add = Op.transpose_matrix(Node('pCube2').worldMatrix)
+            decomp = Op.decompose_matrix(matrix_add)
+            out.t = decomp.outputTranslate
+            out.r = decomp.outputRotate
+            out.s = decomp.outputScale
+        """
+        return _create_and_connect_node('transpose_matrix', *attrs)
 
     @staticmethod
     def decompose_matrix(in_matrix):
