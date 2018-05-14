@@ -1381,9 +1381,11 @@ def _create_and_connect_node(operation, *args, **kwargs):
     new_node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", 'no_operation')
     op_attr = '{}.operation'.format(args[0].node)
     existing_node_operation = cmds.getAttr(op_attr) if cmds.objExists(op_attr) else 'no_operation'
+    using_existing_node = False
     if try_existing_node and \
         (existing_node_type == new_node_type) and \
         (existing_node_operation == new_node_operation):
+        using_existing_node = True
         new_node = args[0].node
         args = args[1:]
         new_node_inputs = new_node_inputs[1:]
@@ -1404,7 +1406,7 @@ def _create_and_connect_node(operation, *args, **kwargs):
         new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
         # multi_index inputs must always be caught and filled!
         if lookup_tables.NODE_LOOKUP_TABLE[operation].get("multi_index", False):
-            if try_existing_node:
+            if using_existing_node:
                 i = get_next_free_multi_index(new_node_input_list[0].format(multi_index=i), i)
             new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
 
@@ -1439,13 +1441,18 @@ def _create_and_connect_node(operation, *args, **kwargs):
 def get_next_free_multi_index(attr_name, start_index):
     '''Find the next unconnected multi index starting at the passed in index.'''
     # assume a max of 10 million connections
+    child_attrs = []
     while not attr_name.endswith(']'):
         if attr_name.count('.') < 2:
             break
-        attr_name = '.'.join(attr_name.split('.')[:-1])
+        tokens = attr_name.split('.')
+        attr_name = '.'.join(tokens[:-1])
+        child_attrs.append(tokens[-1])
     attr_name = '['.join(attr_name.split('[')[:-1])
+    child_attr = '.'.join(child_attrs[::-1])
     while start_index < 10000000:
-        if len(cmds.connectionInfo('{}[{}]'.format(attr_name, start_index), sfd=True) or []) == 0:
+        if not cmds.connectionInfo('{}[{}]'.format(attr_name, start_index), sfd=True) and \
+           not cmds.connectionInfo('{}[{}].{}'.format(attr_name, start_index, child_attr), sfd=True):
             return start_index
         start_index += 1
 
