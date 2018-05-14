@@ -657,7 +657,11 @@ class Node(object):
             op = "add"
         elif not self.node and isinstance(self.attrs, (list, tuple)):
             op = "add"
-        return _create_and_connect_node(op, self, other)
+
+        if op == "add":
+            return _create_and_connect_node(op, self, other, try_existing_node=True)
+        else:
+            return _create_and_connect_node(op, self, other)
 
     def __radd__(self, other):
         """
@@ -673,7 +677,11 @@ class Node(object):
             op = "add"
         elif not self.node and isinstance(self.attrs, (list, tuple)):
             op = "add"
-        return _create_and_connect_node(op, other, self)
+        
+        if op == 'add':
+            return _create_and_connect_node(op, other, self, try_existing_node=True)
+        else:
+            return _create_and_connect_node(op, other, self)
 
     def __sub__(self, other):
         """
@@ -682,7 +690,8 @@ class Node(object):
         Example:
             >>> Node("pCube1.ty") - 4
         """
-        return _create_and_connect_node("sub", self, other)
+        # return _create_and_connect_node("sub", self, other)
+        return _create_and_connect_node("sub", self, other, try_existing_node=True)
 
     def __rsub__(self, other):
         """
@@ -692,7 +701,8 @@ class Node(object):
         Example:
             >>> 4 - Node("pCube1.ty")
         """
-        return _create_and_connect_node("sub", other, self)
+        # return _create_and_connect_node("sub", other, self)
+        return _create_and_connect_node("sub", other, self, try_existing_node=True)
 
     def __mul__(self, other):
         """
@@ -1338,7 +1348,7 @@ class Container(object):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CREATE, CONNECT AND SETUP NODE
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def _create_and_connect_node(operation, *args):
+def _create_and_connect_node(operation, *args, **kwargs):
     """
     Generic function to create properly named Maya nodes
 
@@ -1364,15 +1374,27 @@ def _create_and_connect_node(operation, *args):
 
     # Unravel all given arguments and create a new node according to given operation
     unravelled_args_list = [_get_unravelled_value_as_list(x) for x in args]
-    new_node = _traced_create_node(operation, unravelled_args_list)
+    try_existing_node = kwargs.get('try_existing_node', False)
 
-    # Add to created_nodes_stack Node-classAttr. Necessary for container creation!
-    Node.add_to_node_stack(new_node)
-    # If the given node-type has a node-operation; set it according to NODE_LOOKUP_TABLE
-    node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", None)
-    if node_operation:
-        _set_or_connect_a_to_b(new_node + ".operation", node_operation)
-
+    new_node_type = lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]
+    existing_node_type = cmds.nodeType(args[0].node)
+    new_node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", 'no_operation')
+    op_attr = '{}.operation'.format(args[0].node)
+    existing_node_operation = cmds.getAttr(op_attr) if cmds.objExists(op_attr) else 'no_operation'
+    if try_existing_node and \
+        (existing_node_type == new_node_type) and \
+        (existing_node_operation == new_node_operation):
+        new_node = args[0].node
+        args = args[1:]
+        new_node_inputs = new_node_inputs[1:]
+    else:
+        new_node = _traced_create_node(operation, unravelled_args_list)
+        # Add to created_nodes_stack Node-classAttr. Necessary for container creation!
+        Node.add_to_node_stack(new_node)
+        # If the given node-type has a node-operation; set it according to NODE_LOOKUP_TABLE
+        node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", None)
+        if node_operation:
+            _set_or_connect_a_to_b(new_node + ".operation", node_operation)
     # Find the maximum dimension involved to know what to connect. For example:
     # 3D to 3D requires 3D-input, 1D to 2D needs 2D-input, 1D to 1D only needs 1D-input
     max_dim = max([len(x) for x in unravelled_args_list])
@@ -1382,6 +1404,8 @@ def _create_and_connect_node(operation, *args):
         new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
         # multi_index inputs must always be caught and filled!
         if lookup_tables.NODE_LOOKUP_TABLE[operation].get("multi_index", False):
+            if try_existing_node:
+                i = get_next_free_multi_index(new_node_input_list[0].format(multi_index=i), i)
             new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
 
         # Support for single-dimension-inputs in the NODE_LOOKUP_TABLE. For example:
@@ -1412,6 +1436,21 @@ def _create_and_connect_node(operation, *args):
     else:
         return Node(new_node, outputs[:max_dim])
 
+def get_next_free_multi_index(attr_name, start_index):
+    '''Find the next unconnected multi index starting at the passed in index.'''
+    # assume a max of 10 million connections
+    while not attr_name.endswith(']'):
+        if attr_name.count('.') < 2:
+            break
+        attr_name = '.'.join(attr_name.split('.')[:-1])
+    attr_name = '['.join(attr_name.split('[')[:-1])
+    while start_index < 10000000:
+        if len(cmds.connectionInfo('{}[{}]'.format(attr_name, start_index), sfd=True) or []) == 0:
+            return start_index
+        start_index += 1
+
+    # No connections means the first index is available
+    return 0
 
 def _reuse_and_connect_node(*args):
     pass
